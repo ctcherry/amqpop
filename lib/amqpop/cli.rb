@@ -1,6 +1,8 @@
+require 'amqpop/amqpop'
 require 'amqpop/trollop'
 require 'amqpop/lock_file'
 require 'amqpop/auth_file'
+require 'amqpop/message'
 require 'eventmachine'
 require 'amqp'
 
@@ -39,15 +41,19 @@ module Amqpop
               end
 
               queue = get_queue(channel)
-              vputs "Connecting to queue: #{queue.name}"
-              vputs "Ack mode: #{require_ack? ? 'explicit' : 'auto'}"
+
+              queue.once_declared do
+                vputs "Connected to queue: #{queue.name}"
+                vputs "Ack mode: #{Amqpop.require_ack? ? 'explicit' : 'auto'}"
+              end
               
               bind_queue(queue)
 
-              queue.subscribe(:confirm => proc{ wait_exit_timer }, :ack => require_ack?) do |meta, payload|
+              queue.subscribe(:confirm => proc{ wait_exit_timer }, :ack => Amqpop.require_ack?) do |meta, payload|
                 cancel_wait_exit_timer
+                m = Message.new(payload, meta)
                 vputs "Received a message: #{payload}. Executing..."
-                run_payload(payload, meta)
+                EventMachine.defer(m.command_proc, m.callback_proc)
                 wait_exit_timer
               end
 
@@ -114,56 +120,6 @@ module Amqpop
         end
       end
 
-      def run_payload(payload, meta)
-
-        if options[:child_command].length == 0
-
-          command = proc do
-            puts payload
-          end
-          callback = proc do
-            meta.ack if require_ack?
-          end
-
-        else
-
-          pr = options[:child_command].join(' ')
-          
-          command = proc do
-            vputs "Running process: `#{pr}`"
-            IO.popen(pr, "r+") { |f|
-              f.puts payload
-              f.close_write
-              r = f.gets
-              vputs r unless r == ''
-            }
-            $?
-          end
-
-          callback = proc do |exit_status|
-            if exit_status == 0
-              if require_ack?
-                vputs "Process terminated successfully. Acking message."
-                meta.ack
-              else
-                vputs "Process terminated successfully."
-              end
-            else
-              if require_ack?
-                vputs "Process terminated with non-zero exit status #{exit_status}. Requeuing message."
-                meta.reject(:requeue => true)
-              else
-                vputs "Process terminated with non-zero exit status #{exit_status}."
-              end
-            end
-          end
-
-        end
-
-        EventMachine.defer(command, callback)
-
-      end
-
       def bind_queue(queue)
         if options[:exchange][:name] == ""
           vputs "Binding queue to default exchange implicitly, with routing key '#{queue.name}'"
@@ -173,16 +129,8 @@ module Amqpop
         end
       end
 
-      def require_ack?
-        !temp_queue?
-      end
-
-      def temp_queue?
-        options[:queue_name] == ""
-      end
-
       def get_queue(channel)
-        if temp_queue?
+        if Amqpop.temp_queue?
           channel.queue('', :auto_delete => true, :durable => false, :exclusive => true)
         else
           channel.queue(options[:queue_name], :auto_delete => false, :durable => true)
@@ -190,15 +138,15 @@ module Amqpop
       end
 
       def eputs(msg)
-        STDERR.puts msg
+        Amqpop.eputs msg
       end
 
       def vputs(msg)
-        eputs "> #{msg}" if options[:verbose]
+        Amqpop.vputs msg
       end
 
       def options
-        return @options if defined?(@options)
+        return Amqpop.options unless Amqpop.options.nil?
         @options = Trollop::options do
           version "amqpop 0.0.1 (c) 2012 Chris Cherry"
           banner <<-EOS
@@ -235,8 +183,7 @@ EOS
         # Store child command, or empty array
         dbldash = ARGV.shift
         @options[:child_command] = ARGV.dup
-
-        @options
+        Amqpop.options = @options
       end
 
   end
