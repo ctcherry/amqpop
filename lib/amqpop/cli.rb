@@ -32,21 +32,22 @@ module Amqpop
           AMQP.connect(connection_params) do |connection|
             AMQP::Channel.new(connection) do |channel|
 
-              queue = get_queue(channel)
-              vputs "Connecting to queue: #{queue.name}"
-
-              bind_queue(queue)
-
               if options[:wait] == 0
                 vputs "No timeout set, process will stay running"
               else
                 vputs "Timeout of #{options[:wait]} seconds set"
               end
 
-              queue.subscribe(:confirm => proc{ wait_exit_timer }) do |payload|
+              queue = get_queue(channel)
+              vputs "Connecting to queue: #{queue.name}"
+              vputs "Ack mode: #{require_ack? ? 'explicit' : 'auto'}"
+              
+              bind_queue(queue)
+
+              queue.subscribe(:confirm => proc{ wait_exit_timer }, :ack => require_ack?) do |meta, payload|
                 cancel_wait_exit_timer
                 vputs "Received a message: #{payload}. Executing..."
-                run_payload(payload)
+                run_payload(payload, meta)
                 wait_exit_timer
               end
 
@@ -113,15 +114,22 @@ module Amqpop
         end
       end
 
-      def run_payload(payload)
+      def run_payload(payload, meta)
 
         if options[:child_command].length == 0
-          op = proc do
+
+          command = proc do
             puts payload
           end
+          callback = proc do
+            meta.ack if require_ack?
+          end
+
         else
+
           pr = options[:child_command].join(' ')
-          op = proc do
+          
+          command = proc do
             vputs "Running process: `#{pr}`"
             IO.popen(pr, "r+") { |f|
               f.puts payload
@@ -129,14 +137,30 @@ module Amqpop
               r = f.gets
               vputs r unless r == ''
             }
+            $?
           end
+
+          callback = proc do |exit_status|
+            if exit_status == 0
+              if require_ack?
+                vputs "Process terminated successfully. Acking message."
+                meta.ack
+              else
+                vputs "Process terminated successfully."
+              end
+            else
+              if require_ack?
+                vputs "Process terminated with non-zero exit status #{exit_status}. Requeuing message."
+                meta.reject(:requeue => true)
+              else
+                vputs "Process terminated with non-zero exit status #{exit_status}."
+              end
+            end
+          end
+
         end
 
-        callback = proc do |s|
-          # puts s.inspect
-        end
-
-        EventMachine.defer(op, callback)
+        EventMachine.defer(command, callback)
 
       end
 
@@ -149,8 +173,16 @@ module Amqpop
         end
       end
 
+      def require_ack?
+        !temp_queue?
+      end
+
+      def temp_queue?
+        options[:queue_name] == ""
+      end
+
       def get_queue(channel)
-        if options[:queue_name] == ""
+        if temp_queue?
           channel.queue('', :auto_delete => true, :durable => false, :exclusive => true)
         else
           channel.queue(options[:queue_name], :auto_delete => false, :durable => true)
