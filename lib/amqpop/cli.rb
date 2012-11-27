@@ -17,7 +17,7 @@ module Amqpop
       STDOUT.sync = true
       options
       @lock = LockFile.new(options)
-      @lock.aquire!
+      @lock.acquire!
       @auth = AuthFile.new
     end
 

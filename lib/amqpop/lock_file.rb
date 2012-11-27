@@ -7,11 +7,11 @@ module Amqpop
   		@options = options.dup
   	end
 
-    def aquire!
+    def acquire!
       if exist?
         pid = File.read(file_path).strip
         if pid_alive?(pid)
-          aquire_failed(pid)
+          acquire_failed(pid)
           return false
         else
           clean_file
@@ -27,7 +27,7 @@ module Amqpop
 
     private
 
-      def aquire_failed(pid)
+      def acquire_failed(pid)
         STDERR.puts "ERROR: amqpop is already running with the provided options with PID #{pid}"
         exit 1
       end
