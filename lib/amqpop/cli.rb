@@ -1,4 +1,3 @@
-require 'amqpop/version'
 require 'amqpop/trollop'
 require 'amqpop/lock_file'
 require 'amqpop/auth_file'
