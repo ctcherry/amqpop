@@ -80,9 +80,11 @@ Note: The auth file must have world readable and writable disabled (so 660 or
 
 Tested On
 ---------
-* OSX 10.8.2
-* Ruby 1.9.3-p327
-* RabbitMQ 2.8.7/Erlang R14A running on Debian 6.0 kernel 2.6.32-5-686
+* OSX 10.8.2, 10.7.5
+* Ruby 1.9.3-p327, 1.8.7-p358
+* RabbitMQ 2.8.7
+  * on Erlang R14A, Debian 6.0, kernel 2.6.32-5-686
+  * on Erlang R14B04, RedHat EL5, kernel 2.6.18-238.9.1.el5xen
 
 
 Acknowledgements
