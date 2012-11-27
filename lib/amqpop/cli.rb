@@ -162,7 +162,7 @@ module Amqpop
       end
 
       def vputs(msg)
-        eputs msg if options[:verbose]
+        eputs "> #{msg}" if options[:verbose]
       end
 
       def options
