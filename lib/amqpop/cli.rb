@@ -37,7 +37,7 @@ module Amqpop
 
               bind_queue(queue)
 
-              if options[:wait] < 0
+              if options[:wait] == 0
                 vputs "No timeout set, process will stay running"
               else
                 vputs "Timeout of #{options[:wait]} seconds set"
