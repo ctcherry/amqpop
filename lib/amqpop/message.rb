@@ -70,14 +70,31 @@ module Amqpop
 
   		def process_command_proc
   			proc do
+  				retry_limit = 3
+  				retried = 0
           vputs "Running process: `#{child_command_str}`"
-          IO.popen(child_command_str, "r+") { |f|
-            f.puts @payload
-            f.close_write
-            r = f.gets
-            vputs r unless r == ''
-          }
-          $?
+          begin
+	          IO.popen(child_command_str, "r+") { |f|
+	            f.puts @payload
+	            f.close_write
+	            r = f.gets
+	            vputs r unless r == ''
+	          }
+	          ret = $?
+	        rescue => e
+	        	vputs "Exception Running process: `#{child_command_str}`"
+	        	vputs "  #{e.class} - #{e.message}"
+	        	retried += 1
+	        	if retried > retry_limit
+	        		vputs "Out of retries, aborting"
+	        		ret = 255
+	        	else
+	        		vputs "Retry (#{retried}/#{retry_limit}) Waiting #{retried} and trying again"
+	        		sleep retried
+	        		retry
+	        	end
+	        end
+          ret
         end
   		end
 
