@@ -41,11 +41,11 @@ module Amqpop
       end
 
       def option_hash
-        ks = @options.keys.sort
+        ks = @options.keys.map{ |k| k.to_s }.sort
         buffer = []
         ks.each do |k|
           buffer << k
-          buffer << @options[k].to_s
+          buffer << @options[k.to_sym].to_s
         end
 
         Digest::MD5.hexdigest(buffer.join)
