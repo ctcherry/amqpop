@@ -142,12 +142,11 @@ module Amqpop
 
       def bind_queue(queue)
         if options[:exchange][:name] == ""
-          vputs "Binding queue to default exchange"
+          vputs "Binding queue to default exchange implicitly, with routing key '#{queue.name}'"
         else
-          vputs "Binding queue to exchange: #{options[:exchange][:name]}"
+          vputs "Binding queue to exchange: #{options[:exchange][:name]}, with routing key '#{options[:exchange][:routing_key]}'"
+          queue.bind(options[:exchange][:name], :routing_key => options[:exchange][:routing_key])
         end
-        vputs "Routing key: '#{options[:exchange][:routing_key]}'"
-        queue.bind(options[:exchange][:name], :routing_key => options[:exchange][:routing_key])
       end
 
       def get_queue(channel)
