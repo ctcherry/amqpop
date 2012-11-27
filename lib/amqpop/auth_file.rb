@@ -31,7 +31,7 @@ module Amqpop
 
       def load_file(file)
         if File.exist?(file)
-          if File.world_readable?(file) || File.world_writable?(file)
+          if world_readable?(file) || world_writable?(file)
             STDERR.puts "WARNING: Auth file: #{file} has unsafe permissions, not loaded"
             return false
           end
@@ -50,6 +50,16 @@ module Amqpop
           @hosts[host] ||= {}
           @hosts[host][user] = pass
         end
+      end
+
+      def world_writable?(file)
+        world_write_perms = 0000002
+        (File.stat(file).mode & world_write_perms) != 0
+      end
+
+      def world_readable?(file)
+        world_read_perms = 0000004
+        (File.stat(file).mode & world_read_perms) != 0
       end
 
   end
