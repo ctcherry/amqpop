@@ -34,6 +34,13 @@ module Amqpop
           AMQP.connect(connection_params) do |connection|
             AMQP::Channel.new(connection) do |channel|
 
+              channel.on_error do |ch, close|
+                eputs "ERROR: Channel-level exception: #{close.reply_text}, #{close.inspect}"
+                connection.close {
+                  shutdown
+                }
+              end
+
               if options[:wait] == 0
                 vputs "No timeout set, process will stay running"
               else
