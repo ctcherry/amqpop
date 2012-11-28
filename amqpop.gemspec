@@ -6,7 +6,7 @@ Gem::Specification.new do |gem|
   gem.email         = ["ctcherry@gmail.com"]
   gem.description   = %q{Command line AMQP consumer}
   gem.summary       = %q{Command line tool for consuming messages off of an AMQP queue and dispatching them to a user specified command}
-  gem.homepage      = ""
+  gem.homepage      = "https://github.com/ctcherry/amqpop"
 
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
