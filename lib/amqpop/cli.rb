@@ -32,6 +32,11 @@ module Amqpop
           vputs "Running #{AMQP::VERSION} version of the AMQP gem."
           vputs "Connecting to AMQP broker on #{connection_params[:host]} as #{connection_params[:username]}."
           AMQP.connect(connection_params) do |connection|
+            connection.on_tcp_connection_loss do |cl, settings|
+              eputs "Connection to AMQP broker lost!"
+              eputs "Waiting 2 seconds to attempt to connect..."
+              cl.reconnect(true, 2)
+            end
             AMQP::Channel.new(connection) do |channel|
 
               channel.on_error do |ch, close|
