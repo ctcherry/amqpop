@@ -38,7 +38,16 @@ module Amqpop
               eputs "Waiting 2 seconds to attempt to connect..."
               cl.reconnect(true, 2)
             end
-            AMQP::Channel.new(connection) do |channel|
+
+            connection.on_open do
+              vputs "Connection established"
+            end
+
+            connection.on_recovery do
+              eputs "Connection reestablished"
+            end
+
+            AMQP::Channel.new(connection, :auto_recovery => true) do |channel|
 
               channel.on_error do |ch, close|
                 eputs "ERROR: Channel-level exception: #{close.reply_text}, #{close.inspect}"
