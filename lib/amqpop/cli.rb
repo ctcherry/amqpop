@@ -32,6 +32,7 @@ module Amqpop
           vputs "Running #{AMQP::VERSION} version of the AMQP gem."
           vputs "Connecting to AMQP broker on #{connection_params[:host]} as #{connection_params[:username]}."
           AMQP.connect(connection_params) do |connection|
+            Amqpop.connection = connection
             connection.on_tcp_connection_loss do |cl, settings|
               eputs "Connection to AMQP broker lost!"
               eputs "Waiting 2 seconds to attempt to connect..."
@@ -81,6 +82,8 @@ module Amqpop
     private
 
       def shutdown
+        eputs "Shutting down"
+        Amqpop.connection.disconnect unless Amqpop.connection.nil?
         EventMachine.stop
         @lock.release!
         exit 0

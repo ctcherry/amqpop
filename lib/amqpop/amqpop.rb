@@ -2,6 +2,7 @@ module Amqpop
 
 	class << self
 		attr_accessor :options
+    attr_accessor :connection
 	end
 
 	self.options = nil
