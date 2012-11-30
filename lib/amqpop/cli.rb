@@ -145,8 +145,15 @@ module Amqpop
         if Amqpop.temp_queue?
           channel.queue('', :auto_delete => true, :durable => false, :exclusive => true)
         else
-          channel.queue(options[:queue_name], :auto_delete => false, :durable => true)
+          
+          channel.queue(options[:queue_name], :auto_delete => false, :durable => true, :arguments => get_queue_args)
         end
+      end
+
+      def get_queue_args
+        arguments = {}
+        arguments['x-ha-policy'] = 'all' if options[:mirror]
+        arguments
       end
 
       def eputs(msg)
@@ -177,6 +184,7 @@ EOS
           opt :queue_name, "Name of the queue on the to connect to, unique if not provided", :type => :string, :default => ''
           opt :queue_durable, "Is the queue persistant", :default => true
           opt :queue_auto_delete, "Does the queue remove itself", :default => false
+          opt :mirror, "Does the queue mirror itself to all nodes", :default => false
           opt :exchange, "Exchange to bind the queue to. Format [name]:<routing_key>, example: logs or weather:usa.*", :type => :string, :short => "-x", :default => ''
 
           opt :wait, "Amount of time in seconds to wait for more messages to show up. Waits forever if 0", :default => 30
