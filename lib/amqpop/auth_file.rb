@@ -3,10 +3,10 @@ require 'digest/md5'
 module Amqpop
   class AuthFile
 
-  	def initialize
+    def initialize
       @hosts = {}
       load_available_files
-  	end
+    end
 
     def lookup(match_host, match_user = "")
       host = @hosts[match_host]
