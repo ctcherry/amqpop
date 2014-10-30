@@ -53,10 +53,10 @@ module Amqpop
       end
 
       def plain_command_proc
-				proc do
+        proc do
           puts @payload
         end
-  		end
+      end
 
       def plain_callback_proc
         if Amqpop.require_ack?
@@ -102,7 +102,7 @@ module Amqpop
   			
         if Amqpop.require_ack?
 
-					return proc do |exit_status|
+          return proc do |exit_status|
             if exit_status == 0
               vputs "Process terminated successfully. Acking message."
               self.ack
