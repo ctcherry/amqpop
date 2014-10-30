@@ -3,9 +3,9 @@ require 'digest/md5'
 module Amqpop
   class LockFile
 
-  	def initialize(options)
-  		@options = options.dup
-  	end
+    def initialize(options)
+      @options = options.dup
+    end
 
     def acquire!
       if exist?
